@@ -10,7 +10,7 @@ It uses:
 
 * [SORT](https://github.com/abewley/sort) to track those objects over different frames.
 
-Once the objects are detected and tracked over different frames a simple mathematical calculation is applied to count the intersections between the vehicles previous and current frame positions with a defined line.
+객체를 하나 검출하고 추적한다. 차량의 검출한다음 추적선을 표현하고 정의되어있는 선과 교차할때 counting된다. 
 
 The code on this prototype uses the code structure developed by Adrian Rosebrock for his article [YOLO object detection with OpenCV](https://www.pyimagesearch.com/2018/11/12/yolo-object-detection-with-opencv).
 
@@ -23,6 +23,20 @@ The code on this prototype uses the code structure developed by Adrian Rosebrock
 ```
 $ python main.py --input input/highway.mp4 --output output/highway.avi --yolo yolo-coco
 ```
+---
+
+# 사람을 웹캠으로 검출하여 실시간 counting 
+
+
+
+
+
+
+
+
+
+
+---
 
 ## Citation
 
@@ -47,5 +61,3 @@ $ python main.py --input input/highway.mp4 --output output/highway.avi --yolo yo
       doi={10.1109/ICIP.2016.7533003}
     }
     
----
-# 사람을 웹캠으로 검출하여 실시간 counting 
