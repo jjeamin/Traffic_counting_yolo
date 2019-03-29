@@ -64,8 +64,7 @@ ln = net.getLayerNames()
 # OUTPUT layer 가져오기
 ln = [ln[i[0] - 1] for i in net.getUnconnectedOutLayers()]
 
-# initialize the video stream, pointer to output video file, and
-# frame dimensions
+# 비디오파일 읽기
 vs = cv2.VideoCapture(args["input"])
 writer = None
 (W, H) = (None, None)
@@ -112,45 +111,38 @@ while True:
 	confidences = []
 	classIDs = []
 
-	# 각 layer output에 대해 반복
+	# 각 output에 대해 반복
 	for output in layerOutputs:
-		# 각 검출된 것에 대해 반복
+		# 각 output에서 각각 검출된 것에 대해 반복
 		for detection in output:
-			# class ID and confidence 추출 (i.e., probability)
-			# 현재 object detection
+			# 검출된 것에 대한 class IDs, confidence(확률) 추출
 			scores = detection[5:]
 			classID = np.argmax(scores)
 			confidence = scores[classID]
 
-			# 취약한 prediction을 걸러낸다
-			# probability is greater than the minimum probability
+			# 최소 확률보다 큰 확률을 가지는 취약한 예측을 걸러낸다
 			if confidence > args["confidence"]:
-				# scale the bounding box coordinates back relative to
-				# the size of the image, keeping in mind that YOLO
-				# actually returns the center (x, y)-coordinates of
-				# the bounding box followed by the boxes' width and
-				# height
+				# YOLO가 실제로 경계 상자의 중심(x, y) 좌표에 이어
+				# 상자의 폭과 높이를 반환한다는 점을 염두에 두고,
+				# 이미지 크기에 비례하여 경계 상자 좌표를 다시 조정한다.
 				box = detection[0:4] * np.array([W, H, W, H])
 				(centerX, centerY, width, height) = box.astype("int")
 
-				# use the center (x, y)-coordinates to derive the top
-				# and and left corner of the bounding box
+				# 중앙 (x,y)를 사용하여 bounding box의 왼쪽 위 모서리 구함
 				x = int(centerX - (width / 2))
 				y = int(centerY - (height / 2))
 
-				# update our list of bounding box coordinates,
-				# confidences, and class IDs
+				# bounding box coordinates,confidences, class IDs 추가
 				boxes.append([x, y, int(width), int(height)])
 				confidences.append(float(confidence))
 				classIDs.append(classID)
 
-	# apply non-maxima suppression to suppress weak, overlapping
-	# bounding boxes
+	# 겹치는 bounding boxe를 위한 non-maxima suppression 사용
 	idxs = cv2.dnn.NMSBoxes(boxes, confidences, args["confidence"], args["threshold"])
 	
 	dets = []
 	if len(idxs) > 0:
-		# loop over the indexes we are keeping
+		# 우리가 가지는 지표 만큼 반복 (왼아래,오른아래,왼위,오른위,신뢰도)
 		for i in idxs.flatten():
 			(x, y) = (boxes[i][0], boxes[i][1])
 			(w, h) = (boxes[i][2], boxes[i][3])
@@ -158,6 +150,8 @@ while True:
 
 	np.set_printoptions(formatter={'float': lambda x: "{0:0.3f}".format(x)})
 	dets = np.asarray(dets)
+	# object tracking 시작
+	# 정확도가 좋은 순서대로 정렬해준다.
 	tracks = tracker.update(dets)
 
 	boxes = []
@@ -166,6 +160,7 @@ while True:
 	previous = memory.copy()
 	memory = {}
 
+	# bounding box 좌표, ID
 	for track in tracks:
 		boxes.append([track[0], track[1], track[2], track[3]])
 		indexIDs.append(int(track[4]))
@@ -174,7 +169,7 @@ while True:
 	if len(boxes) > 0:
 		i = int(0)
 		for box in boxes:
-			# extract the bounding box coordinates
+			# bounding box 좌표 추출
 			(x, y) = (int(box[0]), int(box[1]))
 			(w, h) = (int(box[2]), int(box[3]))
 
@@ -182,9 +177,12 @@ while True:
 			# color = [int(c) for c in COLORS[classIDs[i]]]
 			# cv2.rectangle(frame, (x, y), (x + w, y + h), color, 2)
 
+			# 검출 물체에 박스를 그리고 각 ID 마다 색을 다르게 한다.
 			color = [int(c) for c in COLORS[indexIDs[i] % len(COLORS)]]
 			cv2.rectangle(frame, (x, y), (w, h), color, 2)
 
+			# 메모리에 저장된 이전 frame 줌심좌표와 현재 frame 중심좌표로
+			# 선을 만들고 그 선과 count line이 교차할때 counting 한다.
 			if indexIDs[i] in previous:
 				previous_box = previous[indexIDs[i]]
 				(x2, y2) = (int(previous_box[0]), int(previous_box[1]))
@@ -201,34 +199,34 @@ while True:
 			cv2.putText(frame, text, (x, y - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
 			i += 1
 
-	# draw line
+	# counting line 그리기
 	cv2.line(frame, line[0], line[1], (0, 255, 255), 5)
 
-	# draw counter
+	# 교차된 차량수 그리기
 	cv2.putText(frame, str(counter), (100,200), cv2.FONT_HERSHEY_DUPLEX, 5.0, (0, 255, 255), 10)
 	# counter += 1
 
-	# saves image file
+	# 이미지 파일 저장
 	cv2.imwrite("output/frame-{}.png".format(frameIndex), frame)
 
-	# check if the video writer is None
+	# video writer가 none인지 확인
 	if writer is None:
-		# initialize our video writer
+		# video writer 초기화
 		fourcc = cv2.VideoWriter_fourcc(*"MJPG")
 		writer = cv2.VideoWriter(args["output"], fourcc, 30,
 			(frame.shape[1], frame.shape[0]), True)
 
-		# some information on processing single frame
+		# frame 처리 정보 
 		if total > 0:
 			elap = (end - start)
 			print("[INFO] single frame took {:.4f} seconds".format(elap))
 			print("[INFO] estimated total time to finish: {:.4f}".format(
 				elap * total))
 
-	# write the output frame to disk
+	# 비디오 저장하기
 	writer.write(frame)
 
-	# increase frame index
+	# frame index 증가
 	frameIndex += 1
 
 	if frameIndex >= 4000:
@@ -237,7 +235,7 @@ while True:
 		vs.release()
 		exit()
 
-# release the file pointers
+# 파일 포인터 해제
 print("[INFO] cleaning up...")
 writer.release()
 vs.release()
