@@ -2,6 +2,8 @@ import os
 import cv2
 import time
 import numpy as np
+import tqdm
+import imutils
 
 memory = {}
 line = [(43, 543), (550, 655)]
@@ -55,7 +57,19 @@ boxes = []
 confidences = []
 classIDs = []
 
-while True:
+try:
+	prop = cv2.cv.CV_CAP_PROP_FRAME_COUNT if imutils.is_cv2() \
+		else cv2.CAP_PROP_FRAME_COUNT
+	total = int(vs.get(prop))
+	print("[INFO] {} total frames in video".format(total))
+
+# 비디오파일의 총 frame 수를 찾는데 에러가 발생할 경우
+except:
+	print("[INFO] could not determine # of frames in video")
+	print("[INFO] no approx. completion time can be provided")
+	total = -1
+
+for i in tqdm(range(1, 600)):
     # frame을 계속 읽어나간다.
     (grabbed, frame) = vs.read()
 
@@ -149,4 +163,3 @@ while True:
     print("ID : ",indexIDs)
     print("memory : ",memory)
 
-    break
