@@ -8,10 +8,12 @@ import os
 import glob
 from tqdm import tqdm
 
+'''
 # 기존에 있는 이미지 제거
 files = glob.glob('output/*.png')
 for f in files:
    os.remove(f)
+'''
 
 # 실시간 추적 모듈 sort 사용
 from sort import *
@@ -88,7 +90,6 @@ except:
 # 총 frame 만큼 반복문
 with tqdm(total=total) as pbar:
 	while True:
-		pbar.update(1)
 		# frame을 계속 읽어나간다.
 		(grabbed, frame) = vs.read()
 
@@ -238,6 +239,9 @@ with tqdm(total=total) as pbar:
 			writer.release()
 			vs.release()
 			exit()
+		
+		# 상태바 업데이트
+		pbar.update(1)
 
 # 파일 포인터 해제
 print("[INFO] cleaning up...")
