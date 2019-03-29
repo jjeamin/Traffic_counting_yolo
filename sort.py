@@ -1,5 +1,5 @@
 """
-    SORT: A Simple, Online and Realtime Tracker
+    SORT: 실시간 추적 모듈
     Copyright (C) 2016 Alex Bewley alex@dynamicdetection.com
 
     This program is free software: you can redistribute it and/or modify

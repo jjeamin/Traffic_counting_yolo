@@ -7,17 +7,20 @@ import cv2
 import os
 import glob
 
+# 기존에 있는 이미지 제거
 files = glob.glob('output/*.png')
 for f in files:
    os.remove(f)
 
+# 실시간 추적 모듈 sort 사용
 from sort import *
 tracker = Sort()
 memory = {}
+# 카운팅하는 line
 line = [(43, 543), (550, 655)]
 counter = 0
 
-# construct the argument parse and parse the arguments
+# input,output,yolo weight argments
 ap = argparse.ArgumentParser()
 ap.add_argument("-i", "--input", required=True,
 	help="path to input video")
@@ -31,31 +34,34 @@ ap.add_argument("-t", "--threshold", type=float, default=0.3,
 	help="threshold when applyong non-maxima suppression")
 args = vars(ap.parse_args())
 
-# Return true if line segments AB and CD intersect
+# AB와 CD가 교차하는 경우 True
 def intersect(A,B,C,D):
 	return ccw(A,C,D) != ccw(B,C,D) and ccw(A,B,C) != ccw(A,B,D)
 
 def ccw(A,B,C):
 	return (C[1]-A[1]) * (B[0]-A[0]) > (B[1]-A[1]) * (C[0]-A[0])
 
-# load the COCO class labels our YOLO model was trained on
+# yolo label 가져오기
 labelsPath = os.path.sep.join([args["yolo"], "coco.names"])
 LABELS = open(labelsPath).read().strip().split("\n")
 
-# initialize a list of colors to represent each possible class label
+# 각 class 레이블을 나타내도록 색상목록 초기화
 np.random.seed(42)
 COLORS = np.random.randint(0, 255, size=(200, 3),
 	dtype="uint8")
 
-# derive the paths to the YOLO weights and model configuration
+# YOLO weights 과 model configuration의 경로
 weightsPath = os.path.sep.join([args["yolo"], "yolov3.weights"])
 configPath = os.path.sep.join([args["yolo"], "yolov3.cfg"])
 
 # load our YOLO object detector trained on COCO dataset (80 classes)
 # and determine only the *output* layer names that we need from YOLO
+# YOLO 모델을 불러온다. 
 print("[INFO] loading YOLO from disk...")
 net = cv2.dnn.readNetFromDarknet(configPath, weightsPath)
+# YOLO 모델 layer 이름
 ln = net.getLayerNames()
+# OUTPUT layer 가져오기
 ln = [ln[i[0] - 1] for i in net.getUnconnectedOutLayers()]
 
 # initialize the video stream, pointer to output video file, and
@@ -66,37 +72,34 @@ writer = None
 
 frameIndex = 0
 
-# try to determine the total number of frames in the video file
+# 비디오파일의 총 frame 수
 try:
 	prop = cv2.cv.CV_CAP_PROP_FRAME_COUNT if imutils.is_cv2() \
 		else cv2.CAP_PROP_FRAME_COUNT
 	total = int(vs.get(prop))
 	print("[INFO] {} total frames in video".format(total))
 
-# an error occurred while trying to determine the total
-# number of frames in the video file
+# 비디오파일의 총 frame 수를 찾는데 에러가 발생할 경우
 except:
 	print("[INFO] could not determine # of frames in video")
 	print("[INFO] no approx. completion time can be provided")
 	total = -1
 
-# loop over frames from the video file stream
+# 총 frame 만큼 반복문
 while True:
-	# read the next frame from the file
+	# frame을 계속 읽어나간다.
 	(grabbed, frame) = vs.read()
 
-	# if the frame was not grabbed, then we have reached the end
-	# of the stream
+	# 만약 frame을 잡지 못하면 종료
 	if not grabbed:
 		break
 
-	# if the frame dimensions are empty, grab them
+	# frame의 공간 크기가 존재하지않으면 만들어준다
 	if W is None or H is None:
 		(H, W) = frame.shape[:2]
 
-	# construct a blob from the input frame and then perform a forward
-	# pass of the YOLO object detector, giving us our bounding boxes
-	# and associated probabilities
+	# 입력 frame에서 blob(대용량 바이너리 객체)을 구하고 forward를 수행한다.
+	# YOLO 객체 검출을 통과하면 bounding box와 관련 확률을 제공한다.
 	blob = cv2.dnn.blobFromImage(frame, 1 / 255.0, (416, 416),
 		swapRB=True, crop=False)
 	net.setInput(blob)
@@ -104,23 +107,22 @@ while True:
 	layerOutputs = net.forward(ln)
 	end = time.time()
 
-	# initialize our lists of detected bounding boxes, confidences,
-	# and class IDs, respectively
+	# 검출된 bounding boxes, confidences, class IDs 각각 초기화
 	boxes = []
 	confidences = []
 	classIDs = []
 
-	# loop over each of the layer outputs
+	# 각 layer output에 대해 반복
 	for output in layerOutputs:
-		# loop over each of the detections
+		# 각 검출된 것에 대해 반복
 		for detection in output:
-			# extract the class ID and confidence (i.e., probability)
-			# of the current object detection
+			# class ID and confidence 추출 (i.e., probability)
+			# 현재 object detection
 			scores = detection[5:]
 			classID = np.argmax(scores)
 			confidence = scores[classID]
 
-			# filter out weak predictions by ensuring the detected
+			# 취약한 prediction을 걸러낸다
 			# probability is greater than the minimum probability
 			if confidence > args["confidence"]:
 				# scale the bounding box coordinates back relative to
