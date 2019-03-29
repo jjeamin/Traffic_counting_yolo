@@ -1,6 +1,6 @@
-# Python Traffic Counter
+# 차량 counting
 
-The purpose of this project is to detect and track vehicles on a video stream and count those going through a defined line. 
+비디오에서 차량을 검출하여 counting 해줍니다.
 
 ![highway.gif](highway.gif)
 
@@ -14,12 +14,12 @@ Once the objects are detected and tracked over different frames a simple mathema
 
 The code on this prototype uses the code structure developed by Adrian Rosebrock for his article [YOLO object detection with OpenCV](https://www.pyimagesearch.com/2018/11/12/yolo-object-detection-with-opencv).
 
-## Quick Start
+## 빠른시작
 
-1. Download the code to your computer.
-2. [Download yolov3.weights](https://www.dropbox.com/s/99mm7olr1ohtjbq/yolov3.weights?dl=0) and place it in `/yolo-coco`.
-3. Make sure you have Python 3.7.0 and [OpenCV 3.4.2](https://www.pyimagesearch.com/opencv-tutorials-resources-guides/) installed.
-4. Run:
+1. git clone
+2. [Download yolov3.weights](https://www.dropbox.com/s/99mm7olr1ohtjbq/yolov3.weights?dl=0) 그리고 yolo-coco 폴더에 넣는다.
+3. Python 3.7.0 and [OpenCV 3.4.2](https://www.pyimagesearch.com/opencv-tutorials-resources-guides/) 설치하기.
+4. 실행:
 ```
 $ python main.py --input input/highway.mp4 --output output/highway.avi --yolo yolo-coco
 ```
@@ -46,3 +46,6 @@ $ python main.py --input input/highway.mp4 --output output/highway.avi --yolo yo
       keywords={Benchmark testing;Complexity theory;Detectors;Kalman filters;Target tracking;Visualization;Computer Vision;Data Association;Detection;Multiple Object Tracking},
       doi={10.1109/ICIP.2016.7533003}
     }
+    
+---
+# 사람을 웹캠으로 검출하여 실시간 counting 
